@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lunar — Your Personal Media Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #f8f7f3;
+      --bg-card:      #ffffff;
+      --bg-modal:     #ffffff;
+      --bg-input:     #f2f1ed;
+      --text:         #0d0c0b;
+      --text-muted:   #7a7670;
+      --text-dim:     #b5b2ab;
+      --accent:       #e8e040;
+      --danger:       #c04040;
+      --border:       #e2dfd8;
+      --border-mid:   #c8c4bc;
+      --border-strong:#0d0c0b;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'DM Mono', monospace;
+      --ease:         160ms cubic-bezier(0.4,0,0.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navbar ─────────────────────────────────────────────── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 60px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border-strong);
+    }
+    .navbar-left  { display: flex; align-items: center; gap: 28px; }
+    .navbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .navbar-logo {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      background: none; border: none; cursor: pointer; padding: 0;
+      transition: color var(--ease);
+      display: inline-flex; align-items: baseline; gap: 3px;
+    }
+    .navbar-logo:hover { color: var(--text-muted); }
+    .navbar-logo .moon { font-size: 0.85em; line-height: 1; }
+
+    .btn-nav {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font-display); font-size: 13px; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--text-muted); padding: 6px 0;
+      transition: color var(--ease);
+      border-bottom: 1px solid transparent;
+    }
+    .btn-nav:hover { color: var(--text); }
+    .btn-nav.active { color: var(--text); border-bottom-color: var(--text); }
+
+    .btn-add {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 20px;
+      background: var(--text); color: var(--bg);
+      font-family: var(--font-display); font-size: 13px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      border: 1px solid var(--text); cursor: pointer;
+      transition: background var(--ease), color var(--ease);
+    }
+    .btn-add:hover { background: var(--text-muted); color: var(--bg); border-color: var(--text-muted); }
+
+    /* ── Filter bar ─────────────────────────────────────────── */
+    .filterbar {
+      display: flex; align-items: center;
+      padding: 0 48px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto; background: var(--bg);
+      scrollbar-width: none;
+    }
+    .filterbar::-webkit-scrollbar { display: none; }
+    .filter-group { display: flex; align-items: center; flex-shrink: 0; }
+    .filter-sep { width: 1px; height: 16px; background: var(--border); margin: 0 20px; flex-shrink: 0; }
+    .filter-label { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-right: 6px; flex-shrink: 0; }
+
+    .filter-pill {
+      padding: 16px 11px;
+      background: transparent; color: var(--text-muted);
+      font-family: var(--font-display); font-size: 13px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; transition: all var(--ease); white-space: nowrap;
+    }
+    .filter-pill:hover { color: var(--text); }
+    .filter-pill.active { color: var(--text); border-bottom-color: var(--text); }
+
+    .btn-new-collection {
+      padding: 3px 9px; margin-left: 6px;
+      background: none; border: 1px solid var(--border-mid); cursor: pointer;
+      font-family: var(--font-display); font-size: 12px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text-dim);
+      transition: all var(--ease); white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-new-collection:hover { border-color: var(--text); color: var(--text); }
+
+    /* ── Library ─────────────────────────────────────────────── */
+    .library-main { padding: 32px 48px 80px; }
+    .library-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; }
+    .library-heading { font-family: var(--font-display); font-size: 13px; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); }
+    .library-count  { font-family: var(--font-display); font-size: 13px; color: var(--text-dim); letter-spacing: 0.08em; }
+
+    .library-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0; border: 1px solid var(--border-strong); overflow: hidden;
+    }
+
+    /* ── Media Card ──────────────────────────────────────────── */
+    .media-card {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background var(--ease);
+      animation: fadeUp 0.28s cubic-bezier(0.4,0,0.2,1) both;
+      display: flex; flex-direction: column;
+    }
+    .media-card:hover { background: #fafaf7; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-visual {
+      position: relative; background: #eeece6; overflow: hidden; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-visual.video-ratio   { aspect-ratio: 16/9; border-bottom: none; }
+    .card-visual.article-ratio { aspect-ratio: 5/1; display: flex; align-items: center; justify-content: center; }
+    .card-visual.book-ratio    { aspect-ratio: 3/4; max-height: 195px; }
+
+    .card-visual img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 0.5s ease; filter: grayscale(12%);
+    }
+    .media-card:hover .card-visual img { transform: scale(1.03); filter: grayscale(0%); }
+
+    .card-book-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; text-align: center; background: #e8e5df;
+    }
+    .card-book-placeholder span {
+      font-family: var(--font-display); font-size: 0.95rem; font-weight: 600;
+      font-style: italic; color: var(--text-muted); line-height: 1.2;
+    }
+
+    .card-type-badge {
+      position: absolute; top: 10px; left: 10px;
+      padding: 2px 7px; font-family: var(--font-display); font-size: 12px; font-weight: 500;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      background: var(--bg); color: var(--text); border: 1px solid var(--border-mid);
+    }
+
+    .card-progress {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px; background: rgba(0,0,0,0.08);
+    }
+    .card-progress-fill { height: 100%; background: var(--text-muted); }
+
+    .card-content { padding: 13px 15px 15px; flex: 1; display: flex; flex-direction: column; }
+    .card-meta    { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .card-title   { font-family: var(--font-display); font-size: 1rem; font-weight: 600; line-height: 1.3; color: var(--text); flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .card-collection-tag { display: inline-block; margin-top: 5px; padding: 2px 6px; font-family: var(--font-display); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--border); color: var(--text-muted); }
+
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 4px; }
+    .card-date   { font-family: var(--font-display); font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; }
+    .card-due    { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.08em; padding: 2px 6px; border: 1px solid var(--border-mid); color: var(--text-muted); }
+    .card-due.overdue { border-color: var(--danger); color: var(--danger); }
+
+    .status-pill { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; padding: 2px 7px; }
+    .status-unread      { background: var(--bg); color: var(--text-dim); border: 1px solid var(--border); }
+    .status-in-progress { background: #e8f0f8; color: #3a6fa0; border: 1px solid #c0d4e8; }
+    .status-done        { background: var(--text-muted); color: var(--bg); border: 1px solid var(--text-muted); }
+
+    /* ── Empty State ─────────────────────────────────────────── */
+    .empty-state { display: flex; flex-direction: column; align-items: flex-start; min-height: 55vh; padding: 68px 48px; animation: fadeUp 0.4s ease both; }
+    .empty-overline { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 18px; }
+    .empty-title { font-family: var(--font-display); font-size: clamp(3rem, 8vw, 6rem); font-weight: 600; color: var(--text); line-height: 0.92; letter-spacing: -0.02em; margin-bottom: 24px; }
+    .empty-title em { color: var(--text); font-style: italic; -webkit-text-stroke: none; }
+    .empty-sub { font-family: var(--font-display); font-size: 15px; font-weight: 400; color: var(--text-muted); max-width: 360px; line-height: 1.7; margin-bottom: 28px; }
+
+    /* ── Stats View ──────────────────────────────────────────── */
+    #stats-view { padding: 52px 48px 80px; animation: fadeUp 0.3s ease both; }
+
+    .stats-header { margin-bottom: 40px; }
+    .stats-header-label { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    .stats-header-title { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+    .stats-header-title em { font-style: italic; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0; border: 1px solid var(--border-strong); margin-bottom: 48px; overflow: hidden; }
+    .stat-cell { padding: 26px 22px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .stat-number { font-family: var(--font-display); font-size: 3.2rem; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--text); }
+    .stat-label  { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); margin-top: 8px; }
+    .stat-sub    { font-family: var(--font-display); font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .stats-section-title { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 18px; }
+    .stats-type-bars { display: flex; flex-direction: column; gap: 14px; max-width: 440px; }
+    .stats-type-row  { display: flex; align-items: center; gap: 16px; }
+    .stats-type-label { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); width: 62px; flex-shrink: 0; }
+    .stats-type-bar-bg { flex: 1; height: 3px; background: var(--border); }
+    .stats-type-bar-fill { height: 100%; background: var(--text); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+    .stats-type-count { font-family: var(--font-display); font-size: 13px; color: var(--text-muted); width: 22px; text-align: right; }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(248,247,243,0.92); backdrop-filter: blur(6px);
+      z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+      animation: fadeIn 0.15s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--bg-modal); border: 1px solid var(--border-strong);
+      width: 100%; max-width: 480px;
+      animation: scaleIn 0.18s cubic-bezier(0.34,1.4,0.64,1); overflow: hidden;
+    }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.97) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+    .modal-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; letter-spacing: 0.02em; }
+    .modal-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid var(--border-mid); color: var(--text-muted); cursor: pointer; font-size: 10px; transition: all var(--ease); }
+    .modal-close:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+    .modal-tabs { display: flex; padding: 14px 24px 0; border-bottom: 1px solid var(--border); margin-top: 14px; }
+    .modal-tab {
+      padding: 8px 14px; background: none; border: none; border-bottom: 2px solid transparent;
+      font-family: var(--font-display); font-size: 13px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); cursor: pointer; transition: all var(--ease); margin-bottom: -1px;
+    }
+    .modal-tab:hover  { color: var(--text); }
+    .modal-tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+    .modal-body { padding: 20px 24px 22px; }
+    .tab-panel  { display: none; }
+    .tab-panel.visible { display: block; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
+    .form-input {
+      width: 100%; padding: 10px 13px;
+      background: var(--bg-input); border: 1px solid var(--border-mid);
+      color: var(--text); font-family: var(--font-display); font-size: 14px; font-weight: 400;
+      outline: none; transition: border-color var(--ease);
+    }
+    .form-input::placeholder { color: var(--text-dim); }
+    .form-input:focus { border-color: var(--text); }
+    select.form-input { cursor: pointer; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .video-preview { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: var(--bg-input); border: 1px solid var(--border-mid); margin-top: 10px; }
+    .video-preview img { width: 80px; height: 45px; object-fit: cover; flex-shrink: 0; }
+    .video-preview-title  { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .video-preview-author { font-family: var(--font-display); font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .fetch-status         { font-family: var(--font-display); font-size: 13px; margin-top: 6px; }
+    .fetch-status.loading { color: var(--text-muted); }
+    .fetch-status.error   { color: var(--danger); }
+
+    .btn-submit {
+      width: 100%; padding: 12px;
+      background: var(--text); color: var(--bg);
+      font-family: var(--font-display); font-size: 13px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      border: 1px solid var(--text); cursor: pointer;
+      transition: background var(--ease), color var(--ease); margin-top: 4px;
+    }
+    .btn-submit:hover:not(:disabled) { background: var(--text-muted); color: var(--bg); border-color: var(--text-muted); }
+    .btn-submit:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    /* ── Detail view ─────────────────────────────────────────── */
+    .detail-page { max-width: 820px; margin: 0 auto; padding: 44px 48px 80px; animation: fadeUp 0.3s ease both; }
+
+    .detail-back { display: inline-flex; align-items: center; color: var(--text); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 36px; transition: opacity var(--ease); font-size: 2rem; line-height: 1; }
+    .detail-back:hover { opacity: 0.5; }
+
+    .detail-eyebrow { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+    .detail-eyebrow-dot { width: 5px; height: 5px; background: var(--text-muted); border: 1px solid var(--text); }
+
+    .detail-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 600; line-height: 1.05; color: var(--text); letter-spacing: -0.02em; margin-bottom: 8px; }
+    .detail-author { font-family: var(--font-display); font-size: 14px; color: var(--text-muted); margin-bottom: 28px; letter-spacing: 0.06em; }
+
+    .detail-video-wrapper { position: relative; aspect-ratio: 16/9; background: #eeece6; overflow: hidden; margin-bottom: 32px; display: block; text-decoration: none; outline: none; }
+    .detail-video-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .detail-video-wrapper:hover img { transform: scale(1.02); }
+    .detail-video-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.24); transition: background 0.2s ease; }
+    .detail-video-wrapper:hover .detail-video-play { background: rgba(0,0,0,0.14); }
+    .detail-video-play-btn { width: 58px; height: 58px; border-radius: 50%; background: var(--text-muted); border: 1px solid var(--text); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+    .detail-video-wrapper:hover .detail-video-play-btn { transform: scale(1.08); }
+    .detail-video-label { position: absolute; bottom: 12px; left: 14px; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; background: rgba(0,0,0,0.55); padding: 3px 8px; }
+
+    .detail-book-cover { width: 88px; height: 138px; object-fit: cover; border: 1px solid var(--border-mid); margin-bottom: 28px; }
+
+    .article-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border: 1px solid var(--text); color: var(--text); text-decoration: none; font-family: var(--font-display); font-size: 13px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; transition: all var(--ease); margin-bottom: 32px; }
+    .article-link:hover { background: var(--border); }
+
+    .detail-section { margin-bottom: 26px; }
+    .detail-section-label { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+
+    .detail-status-toggle { display: flex; gap: 5px; flex-wrap: wrap; }
+    .status-btn { padding: 7px 15px; background: none; border: 1px solid var(--border-mid); font-family: var(--font-display); font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); cursor: pointer; transition: all var(--ease); }
+    .status-btn:hover { border-color: var(--text); color: var(--text); }
+    .status-btn.active-unread      { background: var(--text); border-color: var(--text); color: var(--bg); }
+    .status-btn.active-in-progress { background: #3a6fa0; border-color: #3a6fa0; color: #fff; }
+    .status-btn.active-done        { background: var(--text-muted); border-color: var(--text-muted); color: var(--bg); }
+
+    /* Progress */
+    .progress-fields      { display: flex; flex-direction: column; gap: 10px; }
+    .progress-field-row   { display: flex; align-items: center; gap: 12px; }
+    .progress-field-label { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); width: 100px; flex-shrink: 0; }
+    .progress-input { flex: 1; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-mid); color: var(--text); font-family: var(--font-display); font-size: 15px; outline: none; transition: border-color var(--ease); }
+    .progress-input:focus { border-color: var(--text); }
+    .progress-bar-detail { height: 3px; background: var(--border); margin-top: 12px; }
+    .progress-bar-detail-fill { height: 100%; background: var(--text); transition: width 0.4s ease; }
+
+    .detail-notes { width: 100%; min-height: 120px; padding: 13px; background: var(--bg-input); border: 1px solid var(--border-mid); color: var(--text); font-family: var(--font-display); font-size: 14px; font-weight: 400; line-height: 1.75; outline: none; resize: vertical; transition: border-color var(--ease); }
+    .detail-notes::placeholder { color: var(--text-dim); }
+    .detail-notes:focus { border-color: var(--text); }
+
+    .detail-inline-input { padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-mid); color: var(--text); font-family: var(--font-display); font-size: 15px; outline: none; transition: border-color var(--ease); }
+    .detail-inline-input:focus { border-color: var(--text); }
+    .detail-collection-select { width: 100%; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-mid); color: var(--text); font-family: var(--font-display); font-size: 15px; outline: none; cursor: pointer; }
+
+    .detail-meta { display: flex; align-items: center; justify-content: space-between; padding-top: 22px; border-top: 1px solid var(--border); margin-top: 4px; }
+    .detail-date { font-family: var(--font-display); font-size: 13px; color: var(--text-muted); letter-spacing: 0.08em; }
+
+    .btn-delete { padding: 7px 14px; background: none; border: 1px solid var(--border-mid); color: var(--text-muted); font-family: var(--font-display); font-size: 13px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all var(--ease); }
+    .btn-delete:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-mid); }
+
+    @media (max-width: 600px) {
+      .navbar         { padding: 0 20px; }
+      .filterbar      { padding: 0 20px; }
+      .library-main   { padding: 22px 20px 60px; }
+      .detail-page    { padding: 28px 20px 60px; }
+      #stats-view     { padding: 32px 20px 60px; }
+      .empty-state    { padding: 48px 20px; }
+      .stats-grid     { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="navbar-logo" id="logo-btn">Lunar<span class="moon">☽</span></button>
+      <button class="btn-nav" id="stats-btn">Stats</button>
+    </div>
+    <div class="navbar-right">
+      <button class="btn-add" id="open-modal-btn">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── Library view ── -->
+  <div id="library-view">
+    <div class="filterbar" id="filterbar">
+      <div class="filter-group">
+        <span class="filter-label">Type</span>
+        <button class="filter-pill active" data-type="all">All</button>
+        <button class="filter-pill" data-type="video">Videos</button>
+        <button class="filter-pill" data-type="book">Books</button>
+        <button class="filter-pill" data-type="article">Articles</button>
+      </div>
+      <div class="filter-sep"></div>
+      <div class="filter-group">
+        <span class="filter-label">Status</span>
+        <button class="filter-pill active" data-status="all">All</button>
+        <button class="filter-pill" data-status="unread">Unread</button>
+        <button class="filter-pill" data-status="in-progress">In Progress</button>
+        <button class="filter-pill" data-status="done">Done</button>
+      </div>
+      <div class="filter-sep"></div>
+      <div class="filter-group" id="collection-filter-group">
+        <span class="filter-label">Collection</span>
+        <button class="filter-pill active" data-collection="all">All</button>
+        <!-- dynamic collection pills injected here -->
+        <button class="btn-new-collection" id="new-collection-btn">+ New</button>
+      </div>
+    </div>
+    <main class="library-main">
+      <div class="library-header">
+        <span class="library-heading">Your Library</span>
+        <span class="library-count" id="library-count"></span>
+      </div>
+      <div class="library-grid" id="library-grid"></div>
+    </main>
+  </div>
+
+  <!-- ── Stats view ── -->
+  <div id="stats-view" style="display:none">
+    <div class="stats-header">
+      <div class="stats-header-label">Overview</div>
+      <div class="stats-header-title">Your reading<br><em>& watching</em> stats</div>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="stats-section-title">Breakdown by type</div>
+    <div class="stats-type-bars" id="stats-type-bars"></div>
+  </div>
+
+  <!-- ── Detail view ── -->
+  <div id="detail-view" style="display:none">
+    <div class="detail-page">
+      <button class="detail-back" id="back-btn">&#8592;</button>
+      <div class="detail-eyebrow">
+        <div class="detail-eyebrow-dot"></div>
+        <span id="d-type"></span>
+      </div>
+      <h1 class="detail-title" id="d-title"></h1>
+      <div class="detail-author" id="d-author"></div>
+      <div id="d-media"></div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Status</div>
+        <div class="detail-status-toggle">
+          <button class="status-btn" data-s="unread">To Consume</button>
+          <button class="status-btn" data-s="in-progress">In Progress</button>
+          <button class="status-btn" data-s="done">Finished</button>
+        </div>
+      </div>
+
+      <div class="detail-section" id="d-progress-section" style="display:none">
+        <div class="detail-section-label">Progress</div>
+        <div class="progress-fields" id="d-progress-fields"></div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Due Date</div>
+        <input type="date" class="detail-inline-input" id="d-due-date">
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Collection</div>
+        <select class="detail-collection-select" id="d-collection"></select>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Notes</div>
+        <textarea class="detail-notes" id="d-notes" placeholder="Add your thoughts, timestamps, highlights…"></textarea>
+      </div>
+
+      <div class="detail-meta">
+        <span class="detail-date" id="d-date"></span>
+        <button class="btn-delete" id="delete-btn">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add Modal ── -->
+  <div class="modal-overlay" id="modal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Add to Library</span>
+        <button class="modal-close" id="close-modal-btn">✕</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="video">Video</button>
+        <button class="modal-tab" data-tab="book">Book</button>
+        <button class="modal-tab" data-tab="article">Article</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="tab-panel visible" id="tab-video">
+          <div class="form-group">
+            <label class="form-label">YouTube URL</label>
+            <input class="form-input" type="url" id="video-url" placeholder="https://youtube.com/watch?v=...">
+            <div class="fetch-status" id="video-fetch-status" style="display:none"></div>
+            <div class="video-preview" id="video-preview" style="display:none">
+              <img id="video-thumb" src="" alt="">
+              <div>
+                <div class="video-preview-title" id="video-preview-title"></div>
+                <div class="video-preview-author" id="video-preview-author"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-book">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" type="text" id="book-title" placeholder="Book title">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Author</label>
+            <input class="form-input" type="text" id="book-author" placeholder="Author name">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Total Pages</label>
+              <input class="form-input" type="number" id="book-pages" placeholder="350" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cover URL (opt.)</label>
+              <input class="form-input" type="url" id="book-cover" placeholder="https://…">
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-article">
+          <div class="form-group">
+            <label class="form-label">Article URL</label>
+            <input class="form-input" type="url" id="article-url" placeholder="https://…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" type="text" id="article-title" placeholder="Article title">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Due Date (optional)</label>
+            <input class="form-input" type="date" id="modal-due-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Collection (optional)</label>
+            <select class="form-input" id="modal-collection"></select>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="save-btn" disabled>Save to Library</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Storage ──────────────────────────────────────────────────────────────
+    const KEY     = 'lunar_v1';
+    const COL_KEY = 'lunar_collections_v1';
+
+    function load()         { try { return JSON.parse(localStorage.getItem(KEY)     || '[]'); } catch { return []; } }
+    function save(items)    { localStorage.setItem(KEY, JSON.stringify(items)); }
+    function loadCols()     { try { return JSON.parse(localStorage.getItem(COL_KEY) || '[]'); } catch { return []; } }
+    function saveCols(cols) { localStorage.setItem(COL_KEY, JSON.stringify(cols)); }
+    function fmtDate(iso)   { return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }
+    function uid()          { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+    function escHtml(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function extractVideoId(url) {
+      const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
+      return m ? m[1] : null;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let items            = load();
+    let collections      = loadCols();
+    let typeFilter       = 'all';
+    let statusFilter     = 'all';
+    let collectionFilter = 'all';
+    let currentId        = null;
+    let notesTimer       = null;
+    let progressTimer    = null;
+    let videoPending     = null;
+    let activeTab        = 'video';
+
+    const STATUS_LABEL = { 'unread': 'Unread', 'in-progress': 'In Progress', 'done': 'Done' };
+    const STATUS_CLASS = { 'unread': 'status-unread', 'in-progress': 'status-in-progress', 'done': 'status-done' };
+
+    // ── View routing ─────────────────────────────────────────────────────────
+    function showView(name) {
+      document.getElementById('library-view').style.display = name === 'library' ? 'block' : 'none';
+      document.getElementById('detail-view').style.display  = name === 'detail'  ? 'block' : 'none';
+      document.getElementById('stats-view').style.display   = name === 'stats'   ? 'block' : 'none';
+      document.getElementById('stats-btn').classList.toggle('active', name === 'stats');
+    }
+
+    function goToLibrary() {
+      currentId = null;
+      showView('library');
+    }
+
+    // ── Collections ──────────────────────────────────────────────────────────
+    function getCollection(id) { return collections.find(c => c.id === id); }
+
+    function renderCollectionFilters() {
+      const group = document.getElementById('collection-filter-group');
+      Array.from(group.querySelectorAll('[data-collection]:not([data-collection="all"])')).forEach(el => el.remove());
+      const allBtn   = group.querySelector('[data-collection="all"]');
+      const newBtn   = document.getElementById('new-collection-btn');
+      allBtn.classList.toggle('active', collectionFilter === 'all');
+      collections.forEach(col => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-pill' + (collectionFilter === col.id ? ' active' : '');
+        btn.dataset.collection = col.id;
+        btn.textContent = col.name;
+        group.insertBefore(btn, newBtn);
+        btn.addEventListener('click', () => { collectionFilter = col.id; renderCollectionFilters(); renderLibrary(); });
+      });
+    }
+
+    function renderCollectionSelects() {
+      ['modal-collection', 'd-collection'].forEach(elId => {
+        const sel = document.getElementById(elId);
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">No collection</option>' +
+          collections.map(c => `<option value="${escHtml(c.id)}">${escHtml(c.name)}</option>`).join('');
+        sel.value = prev;
+      });
+    }
+
+    document.querySelector('[data-collection="all"]').addEventListener('click', () => {
+      collectionFilter = 'all';
+      renderCollectionFilters();
+      renderLibrary();
+    });
+
+    document.getElementById('new-collection-btn').addEventListener('click', () => {
+      const name = prompt('Collection name:');
+      if (!name || !name.trim()) return;
+      collections = [...collections, { id: uid(), name: name.trim() }];
+      saveCols(collections);
+      renderCollectionFilters();
+      renderCollectionSelects();
+    });
+
+    // ── Library render ───────────────────────────────────────────────────────
+    function renderLibrary() {
+      const grid     = document.getElementById('library-grid');
+      const count    = document.getElementById('library-count');
+      const filtered = items
+        .filter(i => typeFilter       === 'all' || i.type         === typeFilter)
+        .filter(i => statusFilter     === 'all' || i.status       === statusFilter)
+        .filter(i => collectionFilter === 'all' || i.collectionId === collectionFilter);
+
+      if (items.length === 0) {
+        count.textContent = '';
+        grid.style.border = 'none';
+        grid.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-overline">Nothing saved yet</span>
+            <div class="empty-title">Your<br>library<br><em>awaits.</em></div>
+            <p class="empty-sub">Save YouTube videos, books, and articles — everything you mean to consume, in one place.</p>
+            <button class="btn-add" style="margin-top:12px" onclick="openModal()">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Add your first item
+            </button>
+          </div>`;
+        return;
+      }
+
+      grid.style.border = '1px solid var(--border-strong)';
+
+      if (filtered.length === 0) {
+        count.textContent = '';
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;min-height:28vh"><div class="empty-title" style="font-size:2rem">No matches.</div></div>`;
+        return;
+      }
+
+      count.textContent = filtered.length + (filtered.length !== 1 ? ' items' : ' item');
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+
+      grid.innerHTML = filtered.map((item, i) => {
+        const delay    = i * 0.035;
+        let progressBar = '';
+        if (item.type === 'book' && item.totalPages > 0) {
+          const pct = Math.min(100, Math.round((item.currentPage || 0) / item.totalPages * 100));
+          progressBar = `<div class="card-progress"><div class="card-progress-fill" style="width:${pct}%"></div></div>`;
+        }
+
+        const visual = item.type === 'video'
+          ? `<div class="card-visual video-ratio">
+               ${item.thumbnail ? `<img src="${escHtml(item.thumbnail)}" alt="" loading="lazy">` : ''}
+               <span class="card-type-badge">Video</span>
+               ${progressBar}
+             </div>`
+          : item.type === 'book'
+          ? `<div class="card-visual book-ratio">
+               ${item.thumbnail
+                 ? `<img src="${escHtml(item.thumbnail)}" alt="" loading="lazy">`
+                 : `<div class="card-book-placeholder"><span>${escHtml(item.title)}</span></div>`}
+               <span class="card-type-badge">Book</span>
+               ${progressBar}
+             </div>`
+          : `<div class="card-visual article-ratio">
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2e2c29" stroke-width="1.5" stroke-linecap="round">
+                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                 <polyline points="13 2 13 9 20 9"/>
+               </svg>
+               <span class="card-type-badge">Article</span>
+             </div>`;
+
+        const col    = item.collectionId ? getCollection(item.collectionId) : null;
+        const colTag = col ? `<span class="card-collection-tag">${escHtml(col.name)}</span>` : '';
+
+        let dueTag = '';
+        if (item.dueDate) {
+          const due      = new Date(item.dueDate + 'T00:00:00');
+          const overdue  = due < today && item.status !== 'done';
+          dueTag = `<span class="card-due${overdue ? ' overdue' : ''}">${fmtDate(item.dueDate)}</span>`;
+        }
+
+        return `
+          <div class="media-card" style="animation-delay:${delay}s" onclick="showDetail('${item.id}')">
+            ${visual}
+            <div class="card-content">
+              <div class="card-meta">${item.type}${item.author ? ' · ' + escHtml(item.author) : ''}</div>
+              <div class="card-title">${escHtml(item.title)}</div>
+              ${colTag}
+              <div class="card-footer">
+                <span class="card-date">${fmtDate(item.addedAt)}</span>
+                <div style="display:flex;gap:5px;align-items:center">
+                  ${dueTag}
+                  <span class="status-pill ${STATUS_CLASS[item.status]}">${STATUS_LABEL[item.status]}</span>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Filters ──────────────────────────────────────────────────────────────
+    document.querySelectorAll('[data-type]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        typeFilter = btn.dataset.type;
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.toggle('active', b === btn));
+        renderLibrary();
+      });
+    });
+    document.querySelectorAll('[data-status]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        statusFilter = btn.dataset.status;
+        document.querySelectorAll('[data-status]').forEach(b => b.classList.toggle('active', b === btn));
+        renderLibrary();
+      });
+    });
+
+    // ── Navbar ────────────────────────────────────────────────────────────────
+    document.getElementById('logo-btn').addEventListener('click', goToLibrary);
+    document.getElementById('stats-btn').addEventListener('click', () => {
+      const isStats = document.getElementById('stats-view').style.display !== 'none';
+      if (isStats) { goToLibrary(); } else { showStats(); }
+    });
+
+    // ── Stats ────────────────────────────────────────────────────────────────
+    function showStats() {
+      showView('stats');
+      window.scrollTo(0, 0);
+      const total      = items.length;
+      const done       = items.filter(i => i.status === 'done').length;
+      const inProgress = items.filter(i => i.status === 'in-progress').length;
+      const unread     = items.filter(i => i.status === 'unread').length;
+      const videos     = items.filter(i => i.type === 'video').length;
+      const books      = items.filter(i => i.type === 'book').length;
+      const articles   = items.filter(i => i.type === 'article').length;
+      const withDue    = items.filter(i => i.dueDate).length;
+      const today      = new Date(); today.setHours(0, 0, 0, 0);
+      const overdue    = items.filter(i => i.dueDate && new Date(i.dueDate + 'T00:00:00') < today && i.status !== 'done').length;
+
+      document.getElementById('stats-grid').innerHTML = [
+        { n: total,              label: 'Items Saved',   sub: '' },
+        { n: done,               label: 'Finished',      sub: total > 0 ? Math.round(done / total * 100) + '% completion' : '' },
+        { n: inProgress,         label: 'In Progress',   sub: '' },
+        { n: unread,             label: 'Yet to Start',  sub: '' },
+        { n: withDue,            label: 'Have Due Dates',sub: overdue > 0 ? overdue + ' overdue' : 'None overdue' },
+        { n: collections.length, label: 'Collections',   sub: '' },
+      ].map(c => `
+        <div class="stat-cell">
+          <div class="stat-number">${c.n}</div>
+          <div class="stat-label">${c.label}</div>
+          ${c.sub ? `<div class="stat-sub">${c.sub}</div>` : ''}
+        </div>`).join('');
+
+      const max = Math.max(videos, books, articles, 1);
+      document.getElementById('stats-type-bars').innerHTML = [
+        { type: 'Videos',   count: videos },
+        { type: 'Books',    count: books },
+        { type: 'Articles', count: articles },
+      ].map(r => `
+        <div class="stats-type-row">
+          <span class="stats-type-label">${r.type}</span>
+          <div class="stats-type-bar-bg">
+            <div class="stats-type-bar-fill" style="width:${Math.round(r.count / max * 100)}%"></div>
+          </div>
+          <span class="stats-type-count">${r.count}</span>
+        </div>`).join('');
+    }
+
+    // ── Detail view ──────────────────────────────────────────────────────────
+    function showDetail(id) {
+      currentId = id;
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      showView('detail');
+      window.scrollTo(0, 0);
+
+      document.getElementById('d-type').textContent   = item.type.toUpperCase();
+      document.getElementById('d-title').textContent  = item.title;
+      document.getElementById('d-author').textContent = item.author || '';
+      document.getElementById('d-date').textContent   = 'Added ' + fmtDate(item.addedAt);
+      document.getElementById('d-notes').value        = item.notes || '';
+      document.getElementById('d-due-date').value     = item.dueDate || '';
+
+      renderCollectionSelects();
+      document.getElementById('d-collection').value = item.collectionId || '';
+
+      // Media
+      const media = document.getElementById('d-media');
+      if (item.type === 'video') {
+        const vid = extractVideoId(item.url);
+        media.innerHTML = vid
+          ? `<a class="detail-video-wrapper" href="https://www.youtube.com/watch?v=${vid}" target="_blank" rel="noopener noreferrer">
+               <img src="https://img.youtube.com/vi/${vid}/maxresdefault.jpg" alt="" onerror="this.src='https://img.youtube.com/vi/${vid}/hqdefault.jpg'">
+               <div class="detail-video-play">
+                 <div class="detail-video-play-btn">
+                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                 </div>
+               </div>
+               <span class="detail-video-label">Watch on YouTube ↗</span>
+             </a>`
+          : '';
+      } else if (item.type === 'book' && item.thumbnail) {
+        media.innerHTML = `<img class="detail-book-cover" src="${escHtml(item.thumbnail)}" alt="">`;
+      } else if (item.type === 'article') {
+        media.innerHTML = `<a class="article-link" href="${escHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open Article ↗</a>`;
+      } else {
+        media.innerHTML = '';
+      }
+
+      // Status
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.className = 'status-btn';
+        if (btn.dataset.s === item.status) btn.classList.add('active-' + item.status);
+      });
+
+      // Progress
+      const progSection = document.getElementById('d-progress-section');
+      const progFields  = document.getElementById('d-progress-fields');
+      if (item.type === 'video') {
+        progSection.style.display = 'block';
+        progFields.innerHTML = `
+          <div class="progress-field-row">
+            <span class="progress-field-label">Timestamp</span>
+            <input type="text" class="progress-input" id="d-timestamp" placeholder="e.g. 1:23:45" value="${escHtml(item.timestamp || '')}">
+          </div>`;
+        document.getElementById('d-timestamp').addEventListener('input', e => {
+          clearTimeout(progressTimer);
+          const val = e.target.value;
+          progressTimer = setTimeout(() => {
+            items = items.map(i => i.id === currentId ? { ...i, timestamp: val } : i);
+            save(items); renderLibrary();
+          }, 600);
+        });
+      } else if (item.type === 'book') {
+        const pct = item.totalPages > 0 ? Math.min(100, Math.round((item.currentPage || 0) / item.totalPages * 100)) : 0;
+        progSection.style.display = 'block';
+        progFields.innerHTML = `
+          <div class="progress-field-row">
+            <span class="progress-field-label">Current Page</span>
+            <input type="number" class="progress-input" id="d-cur-page" placeholder="0" min="0" value="${item.currentPage || 0}">
+          </div>
+          <div class="progress-field-row">
+            <span class="progress-field-label">Total Pages</span>
+            <input type="number" class="progress-input" id="d-tot-page" placeholder="350" min="1" value="${item.totalPages || ''}">
+          </div>
+          <div class="progress-bar-detail"><div class="progress-bar-detail-fill" id="d-prog-bar" style="width:${pct}%"></div></div>`;
+
+        function updateBookProgress() {
+          const cur = parseInt(document.getElementById('d-cur-page').value) || 0;
+          const tot = parseInt(document.getElementById('d-tot-page').value) || 0;
+          const p   = tot > 0 ? Math.min(100, Math.round(cur / tot * 100)) : 0;
+          document.getElementById('d-prog-bar').style.width = p + '%';
+          clearTimeout(progressTimer);
+          progressTimer = setTimeout(() => {
+            items = items.map(i => i.id === currentId ? { ...i, currentPage: cur, totalPages: tot } : i);
+            save(items); renderLibrary();
+          }, 600);
+        }
+        document.getElementById('d-cur-page').addEventListener('input', updateBookProgress);
+        document.getElementById('d-tot-page').addEventListener('input', updateBookProgress);
+      } else {
+        progSection.style.display = 'none';
+      }
+    }
+
+    document.getElementById('back-btn').addEventListener('click', goToLibrary);
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentId) return;
+        items = items.map(i => i.id === currentId ? { ...i, status: btn.dataset.s } : i);
+        save(items);
+        document.querySelectorAll('.status-btn').forEach(b => {
+          b.className = 'status-btn';
+          if (b.dataset.s === btn.dataset.s) b.classList.add('active-' + btn.dataset.s);
+        });
+        renderLibrary();
+      });
+    });
+
+    document.getElementById('d-notes').addEventListener('input', e => {
+      clearTimeout(notesTimer);
+      const val = e.target.value;
+      notesTimer = setTimeout(() => {
+        items = items.map(i => i.id === currentId ? { ...i, notes: val } : i);
+        save(items);
+      }, 600);
+    });
+
+    document.getElementById('d-due-date').addEventListener('change', e => {
+      items = items.map(i => i.id === currentId ? { ...i, dueDate: e.target.value || null } : i);
+      save(items); renderLibrary();
+    });
+
+    document.getElementById('d-collection').addEventListener('change', e => {
+      items = items.map(i => i.id === currentId ? { ...i, collectionId: e.target.value || null } : i);
+      save(items); renderLibrary(); renderCollectionFilters();
+    });
+
+    document.getElementById('delete-btn').addEventListener('click', () => {
+      if (!confirm('Remove this item from your library?')) return;
+      items = items.filter(i => i.id !== currentId);
+      save(items); goToLibrary(); renderLibrary();
+    });
+
+    // ── Modal ────────────────────────────────────────────────────────────────
+    function openModal() {
+      resetModal();
+      renderCollectionSelects();
+      document.getElementById('modal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    function resetModal() {
+      videoPending = null;
+      ['video-url','book-title','book-author','book-cover','book-pages','article-url','article-title','modal-due-date']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      document.getElementById('video-preview').style.display      = 'none';
+      document.getElementById('video-fetch-status').style.display = 'none';
+      updateSaveBtn();
+    }
+
+    document.getElementById('open-modal-btn').addEventListener('click', openModal);
+    document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+    document.querySelectorAll('.modal-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab;
+        document.querySelectorAll('.modal-tab').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('visible', p.id === 'tab-' + activeTab));
+        updateSaveBtn();
+      });
+    });
+
+    let fetchTimer = null;
+    document.getElementById('video-url').addEventListener('input', e => {
+      clearTimeout(fetchTimer);
+      const val = e.target.value.trim();
+      videoPending = null;
+      document.getElementById('video-preview').style.display = 'none';
+      const status = document.getElementById('video-fetch-status');
+      if (!val) { status.style.display = 'none'; updateSaveBtn(); return; }
+      if (!extractVideoId(val)) {
+        status.className = 'fetch-status error'; status.style.display = 'block';
+        status.textContent = 'Not a valid YouTube URL'; updateSaveBtn(); return;
+      }
+      status.className = 'fetch-status loading'; status.style.display = 'block';
+      status.textContent = 'Fetching…';
+      fetchTimer = setTimeout(() => fetchVideoMeta(val), 400);
+    });
+
+    async function fetchVideoMeta(url) {
+      const status = document.getElementById('video-fetch-status');
+      try {
+        const res  = await fetch('https://www.youtube.com/oembed?url=' + encodeURIComponent(url) + '&format=json');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        videoPending = { title: data.title, thumbnail: data.thumbnail_url, author: data.author_name };
+        status.style.display = 'none';
+        document.getElementById('video-thumb').src                  = data.thumbnail_url;
+        document.getElementById('video-preview-title').textContent  = data.title;
+        document.getElementById('video-preview-author').textContent = data.author_name;
+        document.getElementById('video-preview').style.display      = 'flex';
+      } catch {
+        status.className = 'fetch-status error';
+        status.textContent = 'Could not fetch — check the URL';
+        videoPending = null;
+      }
+      updateSaveBtn();
+    }
+
+    document.getElementById('book-title').addEventListener('input',    updateSaveBtn);
+    document.getElementById('article-url').addEventListener('input',   updateSaveBtn);
+    document.getElementById('article-title').addEventListener('input', updateSaveBtn);
+
+    function updateSaveBtn() {
+      const ok =
+        activeTab === 'video'   ? !!videoPending :
+        activeTab === 'book'    ? document.getElementById('book-title').value.trim().length > 0 :
+                                  document.getElementById('article-url').value.trim().length > 0 &&
+                                  document.getElementById('article-title').value.trim().length > 0;
+      document.getElementById('save-btn').disabled = !ok;
+    }
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+      const dueDate      = document.getElementById('modal-due-date').value || null;
+      const collectionId = document.getElementById('modal-collection').value || null;
+      let item;
+      if (activeTab === 'video') {
+        item = { type:'video', title:videoPending.title, url:document.getElementById('video-url').value.trim(), thumbnail:videoPending.thumbnail, author:videoPending.author };
+      } else if (activeTab === 'book') {
+        item = { type:'book', title:document.getElementById('book-title').value.trim(), author:document.getElementById('book-author').value.trim(), thumbnail:document.getElementById('book-cover').value.trim() || null, url:'', totalPages:parseInt(document.getElementById('book-pages').value) || 0, currentPage:0 };
+      } else {
+        item = { type:'article', title:document.getElementById('article-title').value.trim(), url:document.getElementById('article-url').value.trim(), author:'', thumbnail:null };
+      }
+      items = [{ ...item, id:uid(), addedAt:new Date().toISOString(), status:'unread', notes:'', dueDate, collectionId }, ...items];
+      save(items); closeModal(); renderLibrary();
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    renderCollectionFilters();
+    renderCollectionSelects();
+    renderLibrary();
+  </script>
+</body>
+</html>
